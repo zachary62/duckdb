@@ -14,6 +14,8 @@
 
 #include "parser/parser.hpp"
 
+#include <iostream>
+
 namespace duckdb {
 
 Parser::Parser(ParserOptions options_p) : options(options_p) {
@@ -125,6 +127,7 @@ end:
 }
 
 void Parser::ParseQuery(const string &query) {
+    std::cout << "Hello, World!" << std::endl;
 	Transformer transformer(options.max_expression_depth);
 	string parser_error;
 	{
