@@ -56,7 +56,6 @@ public:
 	RowGroup(RowGroup &row_group, idx_t start);
 	~RowGroup();
 
-private:
 	//! The database instance
 	AttachedDatabase &db;
 	//! The block manager
@@ -164,7 +163,6 @@ private:
 	static void CheckpointDeletes(VersionNode *versions, Serializer &serializer);
 	static shared_ptr<VersionNode> DeserializeDeletes(Deserializer &source);
 
-private:
 	mutex row_group_lock;
 	mutex stats_lock;
 };

@@ -25,6 +25,18 @@ class RowGroupCollection {
 public:
 	RowGroupCollection(shared_ptr<DataTableInfo> info, BlockManager &block_manager, vector<LogicalType> types,
 	                   idx_t row_start, idx_t total_rows = 0);
+    
+    	//! BlockManager
+	BlockManager &block_manager;
+	//! The number of rows in the table
+	atomic<idx_t> total_rows;
+	shared_ptr<DataTableInfo> info;
+	vector<LogicalType> types;
+	idx_t row_start;
+	//! The segment trees holding the various row_groups of the table
+	shared_ptr<SegmentTree> row_groups;
+	//! Table statistics
+	TableStatistics stats;
 
 public:
 	idx_t GetTotalRows() const;
@@ -97,18 +109,6 @@ public:
 private:
 	bool IsEmpty(SegmentLock &) const;
 
-private:
-	//! BlockManager
-	BlockManager &block_manager;
-	//! The number of rows in the table
-	atomic<idx_t> total_rows;
-	shared_ptr<DataTableInfo> info;
-	vector<LogicalType> types;
-	idx_t row_start;
-	//! The segment trees holding the various row_groups of the table
-	shared_ptr<SegmentTree> row_groups;
-	//! Table statistics
-	TableStatistics stats;
 };
 
 } // namespace duckdb

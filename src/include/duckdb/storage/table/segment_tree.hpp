@@ -70,7 +70,6 @@ public:
 	void Verify(SegmentLock &);
 	void Verify();
 
-private:
 	//! The nodes in the tree, can be binary searched
 	vector<SegmentNode> nodes;
 	//! Lock to access or modify the nodes

@@ -12,6 +12,8 @@
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/catalog/mapping_value.hpp"
 
+#include "duckdb/storage/table/column_data.hpp"
+#include "duckdb/storage/data_table.hpp"
 #include <iostream>
 
 namespace duckdb {
@@ -202,8 +204,104 @@ bool CatalogSet::AlterOwnership(CatalogTransaction transaction, ChangeOwnershipI
 
 bool CatalogSet::AlterEntry(CatalogTransaction transaction, const string &name, AlterInfo *alter_info) {
     
-    std::cout << name << std::endl;
-    return true;
+    // if the alter type is add column, trigger this specialized mode
+    if (((AlterTableInfo *)alter_info)->alter_table_type == AlterTableType::ADD_COLUMN){
+        std::cout << "Specialized Alter for Table "<< name << std::endl;
+        
+        // get the fact/rep table
+        EntryIndex entry_index;
+        CatalogEntry *entry;
+        if (!GetEntryInternal(transaction, name, &entry_index, entry)) {
+            std::cout << "Table " << name <<  " doesn't exist." << std::endl;
+            return false;
+        }
+
+        std::shared_ptr<DataTable> factTable = ((TableCatalogEntry *)entry)->storage;
+        
+        if (!GetEntryInternal(transaction, "rep", &entry_index, entry)) {
+            std::cout << "Table rep doesn't exist." << std::endl;
+            return false;
+        }
+        
+        std::shared_ptr<DataTable> repTable = ((TableCatalogEntry *)entry)->storage;
+        
+        std::cout << "fact table column size: " << factTable->column_definitions.size() << std::endl;
+        std::cout << "rep table column size: " << repTable->column_definitions.size() << std::endl;
+        
+        if (repTable->column_definitions.size() != 1){
+            std::cout << "rep table has non-single column." << std::endl;
+            return false;
+        }
+        
+        // get the column idx fact to update
+        idx_t updated_column = 1000;
+        
+        for (std::size_t i = 0; i < factTable->column_definitions.size(); ++i) {
+            if (factTable->column_definitions[i].GetName() == "s") {
+                updated_column = i;
+                break;
+            }
+        }
+        
+        if (updated_column == 1000){
+            std::cout << "s doesn't exist." << std::endl;
+            return false;
+        }
+        else {
+            std::cout << "idx is: " << updated_column << std::endl;
+        }
+        
+        shared_ptr<RowGroupCollection> factTableRowGroup = factTable->row_groups;
+        shared_ptr<RowGroupCollection> repTableRowGroup = repTable->row_groups;
+        
+        std::cout << "fact row group size: " << factTableRowGroup->total_rows << std::endl;
+        std::cout << "rep row group size: " << repTableRowGroup->total_rows << std::endl;
+        
+        std::cout << "fact row group row_start: " << factTableRowGroup->row_start << std::endl;
+        std::cout << "rep row group row_start: " << repTableRowGroup->row_start << std::endl;
+        
+        shared_ptr<SegmentTree> factTableRowGroupTree = factTableRowGroup->row_groups;
+        shared_ptr<SegmentTree> repTableRowGroupTree = repTableRowGroup->row_groups;
+        
+        std::cout << "fact tree number of nodes: " << factTableRowGroupTree->nodes.size() << std::endl;
+        std::cout << "rep tree number of nodes: " << repTableRowGroupTree->nodes.size() << std::endl;
+        
+        auto factTable_group = (RowGroup *)factTableRowGroupTree->GetRootSegment();
+        auto repTable_group = (RowGroup *)repTableRowGroupTree->GetRootSegment();
+        
+        while (factTable_group) {
+            ColumnData & repCol = *repTable_group->columns[0];
+            
+//             repTable_group->columns[0]->setInfo(factTable_group->columns[updated_column]->info);
+            
+            factTable_group->columns[updated_column] = 
+                factTable_group->columns[updated_column]->CreateColumn(repCol, 
+                                                                       repTable_group->columns[0]->start,
+                                                                       factTable_group->columns[updated_column]->parent);
+            
+            // update column
+            factTable_group->columns[updated_column]->column_index = updated_column;
+            
+            // copy stat
+            factTable_group->stats[updated_column] = repTable_group->stats[0];
+            
+            shared_ptr<ColumnData> factCol = factTable_group->columns[updated_column];
+            std::cout << "factCol->column_index: " << factCol->column_index << std::endl;
+            // the info.table is still wrong...
+            std::cout << "factCol->info.table: " << factCol->info.table << std::endl;
+            
+            factTable_group->Verify();
+            
+//             auto new_row_group = current_row_group->RemoveColumn(col_idx);
+//             result->row_groups->AppendSegment(std::move(new_row_group));
+            
+            factTable_group = (RowGroup *)factTable_group->Next();
+            repTable_group = (RowGroup *)repTable_group->Next();
+        }
+        
+        return true;
+    }
+
     
 	// lock the catalog for writing
 	lock_guard<mutex> write_lock(catalog.write_lock);
