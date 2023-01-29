@@ -15,6 +15,12 @@
 #include "parser/parser.hpp"
 
 #include <iostream>
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+
+
 
 namespace duckdb {
 
@@ -28,6 +34,24 @@ struct UnicodeSpace {
 	idx_t pos;
 	idx_t bytes;
 };
+    
+    
+void print_trace (void) {
+    void *array[10];
+    size_t size;
+    char **strings;
+    size_t i;
+
+    size = backtrace (array, 10);
+    strings = backtrace_symbols (array, size);
+
+    printf ("Obtained %zd stack frames.\n", size);
+
+    for (i = 0; i < size; i++)
+        printf ("______________%s\n", strings[i]);
+
+    free (strings);
+}
 
 static bool ReplaceUnicodeSpaces(const string &query, string &new_query, vector<UnicodeSpace> &unicode_spaces) {
 	if (unicode_spaces.empty()) {
@@ -127,7 +151,8 @@ end:
 }
 
 void Parser::ParseQuery(const string &query) {
-    std::cout << "Hello, World!" << std::endl;
+    // print_trace();
+    std::cout << "Hello! The query is: " << query << std::endl;
 	Transformer transformer(options.max_expression_depth);
 	string parser_error;
 	{

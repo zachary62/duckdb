@@ -12,6 +12,8 @@
 #include "duckdb/parser/expression/constant_expression.hpp"
 #include "duckdb/catalog/mapping_value.hpp"
 
+#include <iostream>
+
 namespace duckdb {
 
 //! Class responsible to keep track of state when removing entries from the catalog.
@@ -199,6 +201,10 @@ bool CatalogSet::AlterOwnership(CatalogTransaction transaction, ChangeOwnershipI
 }
 
 bool CatalogSet::AlterEntry(CatalogTransaction transaction, const string &name, AlterInfo *alter_info) {
+    
+    std::cout << name << std::endl;
+    return true;
+    
 	// lock the catalog for writing
 	lock_guard<mutex> write_lock(catalog.write_lock);
 
