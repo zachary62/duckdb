@@ -1,0 +1,12 @@
+CREATE OR REPLACE TABLE r AS SELECT * FROM '/mnt/gbexp/encoded_imputed/sales.csv';
+
+ EXPLAIN ANALYZE select sum(unit_sales) from r;
+ 
+ CREATE OR REPLACE TABLE newr as select date, tid, item_nbr AS s from r;
+ 
+ EXPLAIN ANALYZE SELECT SUM(s) from newr group by date;
+ 
+ 
+EXPLAIN ANALYZE CREATE OR REPLACE TABLE rep as select s + 10 AS s from newr;
+
+ALTER TABLE R ADD COLUMN B INTEGER DEFAULT 10;

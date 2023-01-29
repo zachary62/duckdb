@@ -152,7 +152,7 @@ end:
 
 void Parser::ParseQuery(const string &query) {
     // print_trace();
-    std::cout << "Hello! The query is: " << query << std::endl;
+//     std::cout << "Hello! The query is: " << query << std::endl;
 	Transformer transformer(options.max_expression_depth);
 	string parser_error;
 	{
