@@ -1,3 +1,7 @@
+This is a modified version of DuckDB that supports column swaps between tables.
+
+Example use:
+
 ```
 D CREATE OR REPLACE TABLE rep AS SELECT 3 AS s;
 
